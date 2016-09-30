@@ -31,3 +31,8 @@
 # Debug files
 *.dSYM/
 *.su
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+leptjson_test
