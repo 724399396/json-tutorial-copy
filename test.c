@@ -22,6 +22,11 @@ static int test_pass = 0;
     EXPECT_EQ_BASE(sizeof(expect) - 1 == actuall && memcmp(expect, actuals, actuall) == 0, expect, actuals, "%s")
 #define EXPECT_EQ_TRUE(actual) EXPECT_EQ_BASE((actual) != 0, "true", "false", "%s")
 #define EXPECT_EQ_FALSE(actual) EXPECT_EQ_BASE((actual) == 0, "false", "true", "%s")
+#if defined(_MSC_VER)
+#define EXPECT_EQ_SIZE_T(expect, actual) EXPECT_EQ_BASE((expect) == (actual), (size_t) expect, (size_t) actual, "%Iu")
+#else
+#define EXPECT_EQ_SIZE_T(expect, actual) EXPECT_EQ_BASE((expect) == (actual), (size_t) expect, (size_t) actual, "%zu")
+#endif
 
 static void test_parse_null() {
     lept_value v;
@@ -211,6 +216,45 @@ static void test_parse_invalid_unicode_surrogate() {
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_SURROGATE, "\"\\uD800\\uE000\"");
 }
 
+static void test_parse_array() {
+    lept_value v;
+
+    lept_init(&v);
+    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&v, "[ ]"));
+    EXPECT_EQ_INT(LEPT_ARRAY, lept_get_type(&v));
+    EXPECT_EQ_SIZE_T(0, lept_get_array_size(&v));
+    lept_free(&v);
+
+    #if 0
+    lept_init(&v);
+    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&v, "[ null , false , true , 123 , \"abc\" ]"));
+    EXPECT_EQ_INT(LEPT_ARRAY, lept_get_type(&v));
+    EXPECT_EQ_SIZE_T(5, lept_get_array_size(&v));
+    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(lept_get_array_element(&v, 0)));
+    EXPECT_EQ_INT(LEPT_FALSE, lept_get_type(lept_get_array_element(&v, 1)));
+    EXPECT_EQ_INT(LEPT_TRUE, lept_get_type(lept_get_array_element(&v, 2)));
+    EXPECT_EQ_DOUBLE(123.0, lept_get_number(lept_get_array_element(&v, 3)));
+    EXPECT_EQ_STRING("abc", lept_get_string(lept_get_array_element(&v, 4)), lept_get_string_length(lept_get_array_element(&v, 4)));
+    lept_free(&v);
+
+    lept_init(&v);
+    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&v, "[ [ ] , [ 0 ] , [ 0 , 1 ] , [ 0 , 1 , 2 ] ]"));
+    EXPECT_EQ_INT(LEPT_ARRAY, lept_get_type(&v));
+    EXPECT_EQ_SIZE_T(4, lept_get_array_size(&v));
+    EXPECT_EQ_INT(LEPT_ARRAY, lept_get_type(lept_get_array_element(&v, 0)));
+    lept_free(&v);
+    #endif
+}
+
+static void test_parse_miss_comma_or_square_bracket() {
+#if 0
+    TEST_ERROR(LEPT_PARSE_MISS_COMMA_OR_SQUARE_BRACKET, "[1");
+    TEST_ERROR(LEPT_PARSE_MISS_COMMA_OR_SQUARE_BRACKET, "[1}");
+    TEST_ERROR(LEPT_PARSE_MISS_COMMA_OR_SQUARE_BRACKET, "[1 2");
+    TEST_ERROR(LEPT_PARSE_MISS_COMMA_OR_SQUARE_BRACKET, "[[]");
+#endif
+}
+
 
 static void test_parse() {
     test_parse_null();
@@ -229,6 +273,8 @@ static void test_parse() {
     test_parse_invalid_string_char();
     test_parse_invalid_unicode_hex();
     test_parse_invalid_unicode_surrogate();
+    test_parse_array();
+    test_parse_miss_comma_or_square_bracket();
 }
 
 int main() {
