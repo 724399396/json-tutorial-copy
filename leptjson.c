@@ -232,8 +232,16 @@ static int lept_parse_array(lept_value *v, lept_context *c) {
         lept_value e;
         lept_init(&e);
         lept_parse_whitespace(c);
-        if ((ret = lept_parse_value(c, &e)) != LEPT_PARSE_OK)
+        if ((ret = lept_parse_value(c, &e)) != LEPT_PARSE_OK) {
+            if (size > 0) {
+                v->type = LEPT_ARRAY;
+                v->u.a.size = size;
+                size *= sizeof(lept_value);
+                memcpy(v->u.a.e = (lept_value *)malloc(size), lept_context_pop(c, size), size);
+                lept_free(v);
+            }
             return ret;
+        }
         memcpy(lept_context_push(c, sizeof(lept_value)), &e, sizeof(lept_value));
         size++;
         lept_parse_whitespace(c);
@@ -246,8 +254,16 @@ static int lept_parse_array(lept_value *v, lept_context *c) {
             size *= sizeof(lept_value);
             memcpy(v->u.a.e = (lept_value *)malloc(size), lept_context_pop(c, size), size);
             return LEPT_PARSE_OK;
-        } else
+        } else {
+            if (size > 0) {
+                v->type = LEPT_ARRAY;
+                v->u.a.size = size;
+                size *= sizeof(lept_value);
+                memcpy(v->u.a.e = (lept_value *)malloc(size), lept_context_pop(c, size), size);
+                lept_free(v);
+            }
             return LEPT_PARSE_MISS_COMMA_OR_SQUARE_BRACKET;
+        }
     }
 }
 
